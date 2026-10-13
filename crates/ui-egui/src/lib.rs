@@ -6,9 +6,9 @@
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 #![forbid(unsafe_code)]
 
-pub pub mod i18n;
+pub mod i18n;
 mod ime;
-mod canvas;
+pub mod canvas;
 pub mod control;
 pub mod credits;
 pub mod dialogs;
