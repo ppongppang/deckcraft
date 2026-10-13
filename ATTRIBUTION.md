@@ -56,3 +56,14 @@ families excluded by `crates/fonts/build.rs`:
 | BIZ UDPGothic, BIZ UDMincho, Shippori Mincho, Noto Sans Arabic | OFL-1.1 | Japanese and Arabic text |
 
 Web (wasm32) builds embed only Inter Regular/Bold and BIZ UDPGothic Regular.
+
+
+## Korean fork font input
+
+| Asset | Author | Source and pin | License | Use |
+|---|---|---|---|---|
+| `fonts/nanum-gothic/NanumGothic-Regular.ttf` in the external craft-fonts build input | NHN Corporation / NAVER | Google Fonts `ofl/nanumgothic`, immutable Git blob `2aa2b20905b4136808a0126d8e36e5c0f576715c` | SIL OFL 1.1; unchanged `OFL.txt`, blob `69ff40157d0bba4c65e4ecf77564e1f01d0b02a5` | Korean interface glyphs; embedded by the existing font build pipeline |
+
+`tools/prepare_korean_fonts.py` verifies the Git blob ids and computes the SHA-256 recorded
+in the external font manifest. It changes only the build-input checkout, not installed OS fonts.
+The Windows artifact includes the full, unchanged Nanum Gothic license.

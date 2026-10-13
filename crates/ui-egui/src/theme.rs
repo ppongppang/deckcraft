@@ -160,7 +160,8 @@ pub fn install_fonts(ctx: &egui::Context) {
     for (i, f) in deckcraft_fonts::CRAFT_FONTS.iter().enumerate() {
         let wanted = (f.family == "Inter" && (f.style == "Regular" || f.style == "SemiBold" || f.style == "Bold"))
             || (f.family == "BIZ UDPGothic" && f.style == "Regular")
-            || (f.family == "Noto Sans Arabic");
+            || (f.family == "Noto Sans Arabic")
+            || f.scripts.contains(&"Hang");
         if !wanted {
             continue;
         }

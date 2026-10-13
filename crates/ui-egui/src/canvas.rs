@@ -56,7 +56,7 @@ pub fn show(app: &mut SlideApp, ui: &mut Ui) {
     let Some(st) = app.session.active() else { return };
     if st.doc.slides.is_empty() && st.selection.target == Target::Slides {
         let resp = ui.allocate_rect(avail, Sense::click());
-        ui.painter().text(avail.center(), Align2::CENTER_CENTER, "Click to add first slide", theme::font(22.0), t.text_dim);
+        ui.painter().text(avail.center(), Align2::CENTER_CENTER, crate::i18n::t("Click to add first slide"), theme::font(22.0), t.text_dim);
         if resp.clicked() {
             let _ = app.run("slide.new", json!({"layout": "title"}));
         }
@@ -294,6 +294,9 @@ fn ruler(p: &egui::Painter, avail: Rect, slide: Rect, scale: f32, t: &Tokens) {
 }
 
 fn pointer(app: &mut SlideApp, ui: &Ui, resp: &egui::Response, xf: Xf) {
+    if resp.hovered() && ui.input(|input| input.pointer.any_pressed()) {
+        app.ime.cancel();
+    }
     let tol = (4.0 / xf.scale) as f64;
     let m = mods(ui);
     let Some(pos) = resp.interact_pointer_pos().or(resp.hover_pos()) else { return };
@@ -406,6 +409,15 @@ fn overlays(app: &mut SlideApp, ui: &Ui, painter: &egui::Painter, xf: Xf, t: &To
             }
         }
     }
+    if editing.is_none()
+        && st.selection.shapes.len() == 1
+        && let Some(id) = st.selection.shapes.first()
+        && let Some(shape) = st.shape(*id)
+    {
+        let x = deckcraft_engine::cmd::xfrm_of(&st.doc, &st.selection, shape);
+        let p0 = xf.to_screen(x.affine() * Point::new(4.0, 4.0));
+        ime_cursor(app, ui, painter, p0, p0 + vec2(0.0, 18.0), t);
+    }
     // Caret / text selection.
     if let Some(ts) = &editing
         && !ts.notes
@@ -421,6 +433,10 @@ fn overlays(app: &mut SlideApp, ui: &Ui, painter: &egui::Painter, xf: Xf, t: &To
         for r in l.selection_rects(deckcraft_text::Pos { para: s0.0, ch: s0.1 }, deckcraft_text::Pos { para: s1.0, ch: s1.1 }) {
             let pts = [Point::new(r.x0, r.y0), Point::new(r.x1, r.y0), Point::new(r.x1, r.y1), Point::new(r.x0, r.y1)].map(|q| xf.to_screen(m * q));
             painter.add(egui::Shape::convex_polygon(pts.to_vec(), t.text_selection, Stroke::NONE));
+        }
+        if let Some((cx, top, bot)) = l.caret(deckcraft_text::Pos { para: ts.caret.0, ch: ts.caret.1 }) {
+            let (p0, p1) = (xf.to_screen(m * Point::new(cx, top)), xf.to_screen(m * Point::new(cx, bot)));
+            ime_cursor(app, ui, painter, p0, p1, t);
         }
         if !ts.is_range() {
             let blink = (ui.input(|i| i.time) * 1.6).fract() < 0.6;
@@ -442,6 +458,8 @@ fn overlays(app: &mut SlideApp, ui: &Ui, painter: &egui::Painter, xf: Xf, t: &To
         let x0: f64 = tb.cols.iter().take(c).sum();
         let (w, h) = (tb.cols.get(c).copied().unwrap_or(0.0), heights.get(r).copied().unwrap_or(0.0));
         let a = x.affine();
+        let p0 = xf.to_screen(a * Point::new(x0 + 4.0, y0 + 4.0));
+        ime_cursor(app, ui, painter, p0, p0 + vec2(0.0, 18.0), t);
         let pts = [Point::new(x0, y0), Point::new(x0 + w, y0), Point::new(x0 + w, y0 + h), Point::new(x0, y0 + h)].map(|q| xf.to_screen(a * q));
         poly(painter, pts, Stroke::new(2.0, t.accent));
     }
@@ -547,40 +565,40 @@ fn context_menu(app: &mut SlideApp, resp: &egui::Response) {
         }
         ui.separator();
         if has_sel {
-            if ui.button("Edit Text").clicked() {
+            if ui.button(crate::i18n::t("Edit Text")).clicked() {
                 let _ = app.run("text.edit", json!({}));
                 ui.close();
             }
-            ui.menu_button("Bring to Front", |ui| {
+            ui.menu_button(crate::i18n::t("Bring to Front"), |ui| {
                 crate::ribbon::menu_item(app, ui, crate::icons::Icon::BringToFront, "Bring to Front", "arrange.bringToFront", json!({}));
                 crate::ribbon::menu_item(app, ui, crate::icons::Icon::BringForward, "Bring Forward", "arrange.bringForward", json!({}));
             });
-            ui.menu_button("Send to Back", |ui| {
+            ui.menu_button(crate::i18n::t("Send to Back"), |ui| {
                 crate::ribbon::menu_item(app, ui, crate::icons::Icon::SendToBack, "Send to Back", "arrange.sendToBack", json!({}));
                 crate::ribbon::menu_item(app, ui, crate::icons::Icon::SendBackward, "Send Backward", "arrange.sendBackward", json!({}));
             });
-            ui.menu_button("Group", |ui| {
+            ui.menu_button(crate::i18n::t("Group"), |ui| {
                 crate::ribbon::menu_item(app, ui, crate::icons::Icon::Group, "Group", "arrange.group", json!({}));
                 crate::ribbon::menu_item(app, ui, crate::icons::Icon::Ungroup, "Ungroup", "arrange.ungroup", json!({}));
             });
-            if ui.button("Link…").clicked() {
+            if ui.button(crate::i18n::t("Link…")).clicked() {
                 app.dialog = Some(crate::dialogs::Dialog::new("hyperlink"));
                 ui.close();
             }
-            if ui.button("Edit Alt Text…").clicked() {
+            if ui.button(crate::i18n::t("Edit Alt Text…")).clicked() {
                 app.dialog = Some(crate::dialogs::Dialog::new("altText"));
                 ui.close();
             }
-            if ui.button("Set as Default Shape").clicked() {
+            if ui.button(crate::i18n::t("Set as Default Shape")).clicked() {
                 let _ = app.run("shape.setDefault", json!({}));
                 ui.close();
             }
-            if ui.button("Format Shape…").clicked() {
+            if ui.button(crate::i18n::t("Format Shape…")).clicked() {
                 let _ = app.run("view.pane", json!({"pane": "format"}));
                 ui.close();
             }
         } else {
-            ui.menu_button("Layout", |ui| {
+            ui.menu_button(crate::i18n::t("Layout"), |ui| {
                 let layouts: Vec<(String, u32)> = app
                     .session
                     .active()
@@ -593,18 +611,42 @@ fn context_menu(app: &mut SlideApp, resp: &egui::Response) {
                     }
                 }
             });
-            if ui.button("Reset Slide").clicked() {
+            if ui.button(crate::i18n::t("Reset Slide")).clicked() {
                 let _ = app.run("slide.reset", json!({}));
                 ui.close();
             }
-            if ui.button("Format Background…").clicked() {
+            if ui.button(crate::i18n::t("Format Background…")).clicked() {
                 let _ = app.run("view.pane", json!({"pane": "background"}));
                 ui.close();
             }
-            if ui.button("New Comment").clicked() {
+            if ui.button(crate::i18n::t("New Comment")).clicked() {
                 app.dialog = Some(crate::dialogs::Dialog::new("comment"));
                 ui.close();
             }
         }
     });
+}
+
+
+fn ime_cursor(app: &SlideApp, ui: &Ui, painter: &egui::Painter, top: Pos2, bottom: Pos2, tokens: &Tokens) {
+    if ui.ctx().memory(|memory| memory.focused().is_some()) {
+        return;
+    }
+    let cursor = Rect::from_two_pos(top, bottom).expand2(vec2(1.0, 0.0));
+    ui.ctx().output_mut(|output| {
+        output.ime = Some(egui::output::IMEOutput {
+            purpose: egui::IMEPurpose::Normal,
+            rect: app.slide_rect.unwrap_or(cursor),
+            cursor_rect: cursor,
+            should_interrupt_composition: false,
+        });
+    });
+    if !app.ime.preedit.is_empty() {
+        let font = theme::font(16.0);
+        let galley = painter.layout_no_wrap(app.ime.preedit.clone(), font, tokens.text);
+        let rect = Rect::from_min_size(top, galley.size());
+        painter.rect_filled(rect.expand(2.0), CornerRadius::same(1), tokens.card);
+        painter.galley(top, galley, tokens.text);
+        painter.line_segment([pos2(rect.left(), rect.bottom()), rect.right_bottom()], Stroke::new(1.0, tokens.accent));
+    }
 }

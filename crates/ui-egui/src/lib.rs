@@ -6,7 +6,9 @@
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 #![forbid(unsafe_code)]
 
-pub mod canvas;
+pub pub mod i18n;
+mod ime;
+mod canvas;
 pub mod control;
 pub mod credits;
 pub mod dialogs;
@@ -75,6 +77,7 @@ pub enum ViewMode {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct UiState {
+    pub language: i18n::Language,
     pub brightness: theme::Brightness,
     pub tab: String,
     pub ribbon_collapsed: bool,
@@ -103,6 +106,7 @@ pub struct UiState {
 impl Default for UiState {
     fn default() -> Self {
         UiState {
+            language: i18n::Language::default(),
             brightness: theme::Brightness::Light,
             tab: "Home".into(),
             ribbon_collapsed: false,
@@ -153,6 +157,7 @@ pub const UI_COMMANDS: &[(&str, &str, Option<&str>, &str)] = &[
     ("app.home", "Home", None, "{on?}"),
     ("app.about", "About DeckCraft", None, "{}"),
     ("app.palette", "Command Palette", Some("Cmd+Shift+P"), "{}"),
+    ("app.language", "Interface language", None, "{language: auto|en|ko}"),
     ("app.preferences", "Preferences…", Some("Cmd+,"), "{}"),
     ("app.openDialog", "Open…", None, "{purpose?}"),
     ("app.insertPictureDialog", "Picture from File…", None, "{}"),
@@ -171,6 +176,7 @@ pub struct Perf {
 }
 
 pub struct SlideApp {
+    pub(crate) ime: ime::Composition,
     pub session: Session,
     pub services: Services,
     pub ui: UiState,
@@ -215,6 +221,7 @@ impl SlideApp {
     pub fn new(session: Session, mut services: Services) -> Self {
         let audio_out = services.audio_out.take();
         SlideApp {
+            ime: ime::Composition::default(),
             session,
             services,
             ui: UiState::default(),
@@ -345,6 +352,16 @@ impl SlideApp {
             }
             "app.about" => self.dialog = Some(dialogs::Dialog::new("about")),
             "app.palette" => self.palette = Some((String::new(), 0)),
+            "app.language" => {
+                let code = p.get("language").and_then(Value::as_str).ok_or("missing `language`")?;
+                self.ui.language = match code {
+                    "auto" => i18n::Language::Auto,
+                    "en" => i18n::Language::En,
+                    "ko" => i18n::Language::Ko,
+                    _ => return Err("unsupported interface language".into()),
+                };
+                i18n::set_current(self.ui.language.resolved());
+            }
             "app.preferences" => self.dialog = Some(dialogs::Dialog::new("preferences")),
             "app.openDialog" => self.pick_and_open(),
             "app.insertPictureDialog" => self.pick_and_insert("picture", "insert.picture"),
@@ -418,7 +435,7 @@ impl SlideApp {
             if let Some(path) = pick(&suggested) {
                 match self.session.execute("file.saveAs", &json!({"path": path})) {
                     Ok(_) => {
-                        self.set_status(format!("Saved {path}"));
+                        self.set_status(crate::i18n::fmt("Saved {path}", &[("{path}", format!("{}", path))]));
                         self.ui.recent.retain(|p| *p != path);
                         self.ui.recent.insert(0, path);
                     }
@@ -452,7 +469,7 @@ impl SlideApp {
     pub fn save(&mut self) {
         if self.session.active().and_then(|d| d.path.clone()).is_some() {
             match self.session.execute("file.save", &json!({})) {
-                Ok(_) => self.set_status("Saved"),
+                Ok(_) => self.set_status(crate::i18n::t("Saved")),
                 Err(e) => self.set_status(e.to_string()),
             }
         } else {
@@ -516,7 +533,7 @@ impl SlideApp {
         } else if lower.ends_with(".txt") || lower.ends_with(".md") {
             "slide.fromOutline"
         } else {
-            self.set_status(format!("{name}: DeckCraft can't open this kind of file"));
+            self.set_status(crate::i18n::fmt("{name}: DeckCraft can't open this kind of file", &[("{name}", format!("{}", name))]));
             return;
         };
         let p = if cmd == "slide.fromOutline" { json!({"text": String::from_utf8_lossy(bytes)}) } else { json!({"name": name, "data": data}) };
@@ -530,6 +547,7 @@ impl SlideApp {
 
     /// Per-frame logic before layout: styles, control requests, screenshots, shortcuts.
     pub fn logic(&mut self, ctx: &egui::Context) {
+        i18n::set_current(self.ui.language.resolved());
         let scale = self.ui.ui_scale.clamp(0.5, 3.0);
         if (ctx.zoom_factor() - scale).abs() > 1e-3 {
             ctx.set_zoom_factor(scale);
@@ -574,7 +592,7 @@ impl SlideApp {
             if self.session.documents().iter().any(|d| d.is_dirty())
                 && let Err(e) = self.session.execute("file.recovery.save", &json!({}))
             {
-                self.set_status(format!("Couldn't save AutoRecover information: {e}"));
+                self.set_status(crate::i18n::fmt("Couldn't save AutoRecover information: {e}", &[("{e}", format!("{}", e))]));
             }
         }
         // On the web, dropped files can only be read asynchronously: the host reads them and
@@ -608,9 +626,11 @@ impl SlideApp {
     /// Keyboard and clipboard for the slide (when no text field has focus).
     fn keyboard(&mut self, ctx: &egui::Context) {
         if ctx.memory(|m| m.focused().is_some()) || self.dialog.as_ref().is_some_and(|d| d.modal()) || self.palette.is_some() {
+            self.ime.cancel();
             return;
         }
         let events = ctx.input(|i| i.events.clone());
+        let ime_frame = self.ime.is_composing() || events.iter().any(|event| matches!(event, egui::Event::Ime(_)));
         if self.home_open() {
             // Only app shortcuts (Open, Command Palette…) and Escape, which goes back to the
             // presentation: typing, pasting or deleting would edit the hidden presentation.
@@ -629,7 +649,15 @@ impl SlideApp {
         }
         for e in events {
             match e {
-                egui::Event::Text(t) => {
+                egui::Event::Ime(event) => {
+                    if let Some(text) = self.ime.event(event)
+                        && self.session.active().is_some_and(|d| d.selection.text.is_some() || d.selection.shapes.len() == 1)
+                        && let Err(error) = self.session.type_text(&text)
+                    {
+                        self.set_status(error.to_string());
+                    }
+                }
+                egui::Event::Text(t) if !self.ime.is_composing() => {
                     if self.session.active().is_some_and(|d| d.selection.text.is_some() || d.selection.shapes.len() == 1)
                         && let Err(e) = self.session.type_text(&t)
                     {
@@ -663,7 +691,7 @@ impl SlideApp {
                         self.set_status(e.to_string());
                     }
                 }
-                egui::Event::Key { key, pressed: true, modifiers, .. } => {
+                egui::Event::Key { key, pressed: true, modifiers, .. } if !ime_frame => {
                     let mods = Mods { shift: modifiers.shift, alt: modifiers.alt, cmd: modifiers.command || modifiers.ctrl };
                     if !self.session.tool.drawing_freeform() && menus::ui_shortcut(self, key, mods) {
                         continue;
@@ -682,6 +710,7 @@ impl SlideApp {
 
     /// Lay out the whole window.
     pub fn ui(&mut self, ui: &mut egui::Ui) {
+        i18n::set_current(self.ui.language.resolved());
         let ctx = ui.ctx().clone();
         if !self.fonts_ready {
             ctx.request_repaint();
@@ -938,4 +967,38 @@ mod tests {
         app.run("app.home", json!({})).unwrap();
         assert!(!app.home_open() && app.home.is_none(), "with nothing open the start screen shows anyway");
     }
+    #[test]
+    fn korean_ime_commits_once_and_undo_restores_the_document() {
+        let mut harness = egui_kittest::Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_ui_state(
+            |ui, app: &mut SlideApp| {
+                app.logic(ui.ctx());
+                app.ui(ui);
+            },
+            SlideApp::new(Session::with_new(), Services::default()),
+        );
+        harness.run_steps(2);
+        let title = harness.state().session.active().unwrap().doc.slides[0].shapes[0].id.0;
+        harness.state_mut().session.execute("text.edit", &json!({"id": title})).unwrap();
+        for text in ["ㄱ", "가", "간"] {
+            harness.event(egui::Event::Ime(egui::ImeEvent::Preedit { text: text.into(), active_range_chars: None }));
+            harness.run_steps(1);
+            assert_eq!(title_text(harness.state()), "", "preedit never changes saved text");
+        }
+        harness.event(egui::Event::Ime(egui::ImeEvent::Commit("간".into())));
+        harness.run_steps(1);
+        assert_eq!(title_text(harness.state()), "간");
+        harness.state_mut().session.execute("edit.undo", &json!({})).unwrap();
+        assert_eq!(title_text(harness.state()), "");
+    }
+
+    #[test]
+    fn interface_language_does_not_change_the_presentation() {
+        let mut app = SlideApp::new(Session::with_new(), Services::default());
+        let before = serde_json::to_value(&app.session.active().unwrap().doc).unwrap();
+        app.run("app.language", json!({"language": "ko"})).unwrap();
+        assert_eq!(app.ui.language, i18n::Language::Ko);
+        assert_eq!(serde_json::to_value(&app.session.active().unwrap().doc).unwrap(), before);
+        app.run("app.language", json!({"language": "en"})).unwrap();
+    }
+
 }

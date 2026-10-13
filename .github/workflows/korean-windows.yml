@@ -1,0 +1,59 @@
+name: Korean Windows build
+on:
+  push:
+    branches: [korean-interface]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: korean-windows-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 120
+    env:
+      CARGO_TERM_COLOR: always
+      CRAFT_FONTS_DIR: ${{ github.workspace }}/craft-fonts
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Prepare font input
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: storytold/craft-fonts
+          ref: 3d9ab3a132ed0eff457e424226a435a901da30d3
+          path: craft-fonts
+      - name: Add verified Korean font
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python tools/prepare_korean_fonts.py --directory craft-fonts
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+        with:
+          key: korean-windows-deckcraft
+      - name: Format source
+        run: cargo fmt --all
+      - name: Run project quality gates
+        run: cargo xtask ci
+      - name: Build Windows application
+        run: cargo build --release -p deckcraft
+      - name: Prepare portable files
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path portable -Force | Out-Null
+          Copy-Item -LiteralPath target/release/deckcraft.exe -Destination portable/deckcraft.exe
+          Copy-Item -LiteralPath LICENSE-MIT,LICENSE-APACHE,NOTICE,ATTRIBUTION.md -Destination portable
+          Copy-Item -LiteralPath craft-fonts/fonts/nanum-gothic/OFL.txt -Destination portable/NanumGothic-OFL.txt
+          $taskDiff = git diff --binary
+          [System.IO.File]::WriteAllText((Join-Path $PWD 'portable/ci-format-and-lock.patch'), ($taskDiff -join "`n"), [System.Text.UTF8Encoding]::new($false))
+          Get-FileHash -LiteralPath portable/deckcraft.exe -Algorithm SHA256 | Format-List | Out-File portable/SHA256.txt -Encoding utf8
+      - name: Upload portable application
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: deckcraft-korean-windows-x64
+          path: portable/
+          if-no-files-found: error
+          retention-days: 30
