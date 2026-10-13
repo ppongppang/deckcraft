@@ -538,7 +538,7 @@ fn paragraph_group(app: &mut SlideApp, ui: &mut Ui, st: &Value) {
                             run(app, "format.bullets", json!({"on": false}));
                         }
                         for ch in ["•", "○", "■", "□", "◆", "➢", "✓", "–", "★"] {
-                            if ui.button(egui::RichText::new(crate::i18n::fmt("{ch}  Bullet", &[("{ch}", format!("{}", ch))])).size(14.0)).clicked() {
+                            if ui.button(egui::RichText::new(crate::i18n::fmt("{ch}  Bullet", &[("{ch}", (ch).to_string())])).size(14.0)).clicked() {
                                 run(app, "format.bullets", json!({"on": true, "char": ch}));
                             }
                         }
@@ -584,7 +584,7 @@ fn paragraph_group(app: &mut SlideApp, ui: &mut Ui, st: &Value) {
                 let r = icon_toggle(ui, Icon::Columns, "Columns", en, false);
                 egui::Popup::menu(&r).show(|ui| {
                     for n in 1..=3 {
-                        if ui.button(crate::i18n::fmt("{n} Column{0}", &[("{n}", format!("{}", n)), ("{0}", format!("{}", if n > 1 { "s" } else { "" }))])).clicked() {
+                        if ui.button(crate::i18n::fmt("{n} Column{0}", &[("{n}", (n).to_string()), ("{0}", (if n > 1 { "s" } else { "" }).to_string())])).clicked() {
                             run(app, "format.columns", json!({"count": n, "spacing": 18}));
                         }
                     }
@@ -777,7 +777,7 @@ pub fn outline_menu(app: &mut SlideApp, ui: &mut Ui, sc: &deckcraft_color::Color
     }
     ui.menu_button(crate::i18n::t("Weight"), |ui| {
         for w in [0.25, 0.5, 0.75, 1.0, 1.5, 2.25, 3.0, 4.5, 6.0] {
-            if ui.button(crate::i18n::fmt("{w} pt", &[("{w}", format!("{}", w))])).clicked() {
+            if ui.button(crate::i18n::fmt("{w} pt", &[("{w}", (w).to_string())])).clicked() {
                 run(app, "shape.line", json!({"width": w}));
                 ui.close();
             }
@@ -843,7 +843,7 @@ pub fn effects_menu(app: &mut SlideApp, ui: &mut Ui) {
             run(app, "shape.effects", json!({"glow": null}));
         }
         for r in [5.0, 8.0, 11.0, 18.0] {
-            if ui.button(crate::i18n::fmt("{r} pt glow", &[("{r}", format!("{}", r))])).clicked() {
+            if ui.button(crate::i18n::fmt("{r} pt glow", &[("{r}", (r).to_string())])).clicked() {
                 run(app, "shape.effects", json!({"glow": r}));
             }
         }
@@ -1044,7 +1044,7 @@ fn insert(app: &mut SlideApp, ui: &mut Ui) {
         let r = big_button(ui, Icon::Action, "Action", enabled(app, "insert.actionButton"));
         egui::Popup::menu(&r).show(|ui| {
             for k in ["back", "forward", "beginning", "end", "home", "information", "return", "movie", "document", "sound", "help", "custom"] {
-                if ui.button(crate::i18n::fmt("Action Button: {k}", &[("{k}", format!("{}", k))])).clicked() {
+                if ui.button(crate::i18n::fmt("Action Button: {k}", &[("{k}", (k).to_string())])).clicked() {
                     run(app, "insert.actionButton", json!({"kind": k}));
                 }
             }
@@ -1059,7 +1059,7 @@ fn insert(app: &mut SlideApp, ui: &mut Ui) {
         let r = big_button(ui, Icon::WordArt, "WordArt", enabled(app, "insert.wordArt"));
         egui::Popup::menu(&r).show(|ui| {
             for i in 0..6 {
-                if ui.button(crate::i18n::fmt("WordArt style {0}", &[("{0}", format!("{}", i + 1))])).clicked() {
+                if ui.button(crate::i18n::fmt("WordArt style {0}", &[("{0}", (i + 1).to_string())])).clicked() {
                     run(app, "insert.wordArt", json!({"style": i}));
                 }
             }
@@ -1268,7 +1268,7 @@ fn design(app: &mut SlideApp, ui: &mut Ui) {
                     };
                     let (rect, resp) = ui.allocate_exact_size(vec2(48.0, 28.0), Sense::click());
                     ui.painter().rect(rect, CornerRadius::same(2), shade, Stroke::new(1.0, Tokens::get(ui.ctx()).border), egui::StrokeKind::Inside);
-                    if resp.on_hover_text(crate::i18n::fmt("Style {i}", &[("{i}", format!("{}", i))])).clicked() {
+                    if resp.on_hover_text(crate::i18n::fmt("Style {i}", &[("{i}", (i).to_string())])).clicked() {
                         run(app, "design.background", json!({"style": i, "all": true}));
                         ui.close();
                     }
@@ -1623,7 +1623,7 @@ fn animations(app: &mut SlideApp, ui: &mut Ui) {
             let shapes: Vec<(u32, String)> =
                 app.session.active().map(|d| d.shapes().iter().map(|s| (s.id.0, s.name.clone())).collect()).unwrap_or_default();
             for (id, name) in shapes {
-                if ui.button(crate::i18n::fmt("On Click of {name}", &[("{name}", format!("{}", name))])).clicked() {
+                if ui.button(crate::i18n::fmt("On Click of {name}", &[("{name}", (name).to_string())])).clicked() {
                     run(app, "animation.timing", json!({"trigger": id}));
                 }
             }
@@ -2067,7 +2067,7 @@ fn picture_format(app: &mut SlideApp, ui: &mut Ui) {
         let r = big_button(ui, Icon::ColorAdjust, "Color", true);
         egui::Popup::menu(&r).show(|ui| {
             for s in [0.0, 0.33, 0.66, 1.0, 1.5, 2.0, 3.0] {
-                if ui.button(crate::i18n::fmt("Saturation {0}%", &[("{0}", format!("{}", (s * 100.0) as i32))])).clicked() {
+                if ui.button(crate::i18n::fmt("Saturation {0}%", &[("{0}", ((s * 100.0) as i32).to_string())])).clicked() {
                     run(app, "picture.adjust", json!({"saturation": s}));
                 }
             }

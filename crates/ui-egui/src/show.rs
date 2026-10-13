@@ -555,7 +555,7 @@ pub fn ui(app: &mut SlideApp, ui: &mut Ui) {
         painter.text(
             pos2(bar.min.x + 14.0, bar.center().y),
             Align2::LEFT_CENTER,
-            crate::i18n::fmt("Slide {0} of {1}", &[("{0}", format!("{}", show.state.slide + 1)), ("{1}", format!("{}", doc.slides.len()))]),
+            crate::i18n::fmt("Slide {0} of {1}", &[("{0}", (show.state.slide + 1).to_string()), ("{1}", (doc.slides.len()).to_string())]),
             theme::font(12.0),
             Color32::from_gray(200),
         );
@@ -765,7 +765,7 @@ fn presenter_window(ctx: &egui::Context, show: &mut Show, doc: &Presentation, no
                         .color(Color32::WHITE),
                     );
                     ui.add_space(20.0);
-                    ui.label(egui::RichText::new(crate::i18n::fmt("Slide {0} of {1}", &[("{0}", format!("{}", cur + 1)), ("{1}", format!("{}", doc.slides.len()))])).size(16.0).color(Color32::from_gray(200)));
+                    ui.label(egui::RichText::new(crate::i18n::fmt("Slide {0} of {1}", &[("{0}", (cur + 1).to_string()), ("{1}", (doc.slides.len()).to_string())])).size(16.0).color(Color32::from_gray(200)));
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         if ui.button(crate::i18n::t("End Show")).clicked() {
                             *keep = false;

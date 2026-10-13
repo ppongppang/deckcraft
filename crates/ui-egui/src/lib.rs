@@ -435,7 +435,7 @@ impl SlideApp {
             if let Some(path) = pick(&suggested) {
                 match self.session.execute("file.saveAs", &json!({"path": path})) {
                     Ok(_) => {
-                        self.set_status(crate::i18n::fmt("Saved {path}", &[("{path}", format!("{}", path))]));
+                        self.set_status(crate::i18n::fmt("Saved {path}", &[("{path}", (path).to_string())]));
                         self.ui.recent.retain(|p| *p != path);
                         self.ui.recent.insert(0, path);
                     }
@@ -533,7 +533,7 @@ impl SlideApp {
         } else if lower.ends_with(".txt") || lower.ends_with(".md") {
             "slide.fromOutline"
         } else {
-            self.set_status(crate::i18n::fmt("{name}: DeckCraft can't open this kind of file", &[("{name}", format!("{}", name))]));
+            self.set_status(crate::i18n::fmt("{name}: DeckCraft can't open this kind of file", &[("{name}", (name).to_string())]));
             return;
         };
         let p = if cmd == "slide.fromOutline" { json!({"text": String::from_utf8_lossy(bytes)}) } else { json!({"name": name, "data": data}) };
@@ -592,7 +592,7 @@ impl SlideApp {
             if self.session.documents().iter().any(|d| d.is_dirty())
                 && let Err(e) = self.session.execute("file.recovery.save", &json!({}))
             {
-                self.set_status(crate::i18n::fmt("Couldn't save AutoRecover information: {e}", &[("{e}", format!("{}", e))]));
+                self.set_status(crate::i18n::fmt("Couldn't save AutoRecover information: {e}", &[("{e}", (e).to_string())]));
             }
         }
         // On the web, dropped files can only be read asynchronously: the host reads them and

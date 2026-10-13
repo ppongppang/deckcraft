@@ -271,7 +271,7 @@ fn ruler(p: &egui::Painter, avail: Rect, slide: Rect, scale: f32, t: &Tokens) {
         };
         p.line_segment([pos2(x, top.max.y - h), pos2(x, top.max.y)], Stroke::new(1.0, t.text_faint));
         if k % 4 == 0 {
-            p.text(pos2(x + 2.0, top.min.y + 1.0), Align2::LEFT_TOP, format!("{}", k / 4), theme::font(8.0), t.text_dim);
+            p.text(pos2(x + 2.0, top.min.y + 1.0), Align2::LEFT_TOP, (k / 4).to_string(), theme::font(8.0), t.text_dim);
         }
         k += 1;
     }

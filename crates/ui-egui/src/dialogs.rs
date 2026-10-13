@@ -262,7 +262,7 @@ fn body(app: &mut SlideApp, ui: &mut Ui, d: &mut Dialog) -> bool {
                 return true;
             }
             let what = if names.len() == 1 { format!("“{}”", names[0]) } else { format!("{} presentations", names.len()) };
-            ui.label(egui::RichText::new(crate::i18n::fmt("Do you want to save the changes you made to {what}?", &[("{what}", format!("{}", what))])).strong());
+            ui.label(egui::RichText::new(crate::i18n::fmt("Do you want to save the changes you made to {what}?", &[("{what}", (what).to_string())])).strong());
             ui.label(crate::i18n::t("Your changes will be lost if you don't save them."));
             ui.add_space(8.0);
             let mut done = false;
@@ -450,7 +450,7 @@ fn body(app: &mut SlideApp, ui: &mut Ui, d: &mut Dialog) -> bool {
                         }
                         let r = app.session.execute("file.export", &params);
                         match r {
-                            Ok(_) => app.set_status(crate::i18n::fmt("Exported {path}", &[("{path}", format!("{}", path))])),
+                            Ok(_) => app.set_status(crate::i18n::fmt("Exported {path}", &[("{path}", (path).to_string())])),
                             Err(e) => app.set_status(e.to_string()),
                         }
                     }
@@ -524,7 +524,7 @@ fn body(app: &mut SlideApp, ui: &mut Ui, d: &mut Dialog) -> bool {
             for item in &list {
                 ui.horizontal(|ui| {
                     let w = item.get("word").and_then(Value::as_str).unwrap_or("");
-                    ui.label(crate::i18n::fmt("Slide {0}: “{w}”", &[("{0}", format!("{}", item.get("slide").and_then(Value::as_u64).unwrap_or(0) + 1)), ("{w}", format!("{}", w))]));
+                    ui.label(crate::i18n::fmt("Slide {0}: “{w}”", &[("{0}", (item.get("slide").and_then(Value::as_u64).unwrap_or(0) + 1).to_string()), ("{w}", (w).to_string())]));
                     if ui.small_button(crate::i18n::t("Go to")).clicked() {
                         let _ = app.run("slide.go", json!({"index": item.get("slide").cloned().unwrap_or_default()}));
                     }
@@ -542,7 +542,7 @@ fn body(app: &mut SlideApp, ui: &mut Ui, d: &mut Dialog) -> bool {
             egui::ScrollArea::vertical().max_height(300.0).show(ui, |ui| {
                 for item in &list {
                     ui.horizontal(|ui| {
-                        ui.label(crate::i18n::fmt("Slide {0}: {1}{2}", &[("{0}", format!("{}", item.get("slide").and_then(Value::as_u64).unwrap_or(0) + 1)), ("{1}", format!("{}", item.get("issue").and_then(Value::as_str).unwrap_or(""))), ("{2}", format!("{}", item.get("name").and_then(Value::as_str).map(|n| format!(" — {n}")).unwrap_or_default()))]));
+                        ui.label(crate::i18n::fmt("Slide {0}: {1}{2}", &[("{0}", (item.get("slide").and_then(Value::as_u64).unwrap_or(0) + 1).to_string()), ("{1}", (item.get("issue").and_then(Value::as_str).unwrap_or("")).to_string()), ("{2}", (item.get("name").and_then(Value::as_str).map(|n| format!(" — {n}")).unwrap_or_default()).to_string())]));
                         if ui.small_button(crate::i18n::t("Go to")).clicked() {
                             let _ = app.run("slide.go", json!({"index": item.get("slide").cloned().unwrap_or_default()}));
                             if let Some(id) = item.get("shape") {
@@ -578,7 +578,7 @@ fn body(app: &mut SlideApp, ui: &mut Ui, d: &mut Dialog) -> bool {
             let shows = app.session.active().map(|s| s.doc.custom_shows.clone()).unwrap_or_default();
             for s in &shows {
                 ui.horizontal(|ui| {
-                    ui.label(crate::i18n::fmt("{0} ({1} slides)", &[("{0}", format!("{}", s.name)), ("{1}", format!("{}", s.slides.len()))]));
+                    ui.label(crate::i18n::fmt("{0} ({1} slides)", &[("{0}", (s.name).to_string()), ("{1}", (s.slides.len()).to_string())]));
                     if ui.small_button(crate::i18n::t("Delete")).clicked() {
                         let _ = app.run("show.customShow", json!({"name": s.name, "delete": true}));
                     }
@@ -742,7 +742,7 @@ fn body(app: &mut SlideApp, ui: &mut Ui, d: &mut Dialog) -> bool {
             ok
         }
         _ => {
-            ui.label(crate::i18n::fmt("“{0}” is not available yet.", &[("{0}", format!("{}", d.id))]));
+            ui.label(crate::i18n::fmt("“{0}” is not available yet.", &[("{0}", (d.id).to_string())]));
             let (ok, cancel) = buttons(ui, "OK");
             ok || cancel
         }
@@ -857,7 +857,7 @@ pub fn start_screen(app: &mut SlideApp, ui: &mut Ui) {
             ui.add_space(8.0);
             ui.horizontal(|ui| {
                 ui.add_space(40.0);
-                if ui.button(crate::i18n::fmt("← Back to {title}", &[("{title}", format!("{}", title))])).on_hover_text(crate::i18n::t("Esc")).clicked() {
+                if ui.button(crate::i18n::fmt("← Back to {title}", &[("{title}", (title).to_string())])).on_hover_text(crate::i18n::t("Esc")).clicked() {
                     let _ = app.run("app.home", json!({"on": false}));
                 }
             });

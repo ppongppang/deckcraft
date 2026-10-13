@@ -95,7 +95,7 @@ fn list(app: &mut SlideApp, ui: &mut Ui) {
         p.text(
             pos2(row.min.x + 14.0, img.min.y + 2.0),
             Align2::CENTER_TOP,
-            format!("{}", i + 1),
+            (i + 1).to_string(),
             theme::font(12.0),
             if selected { t.text } else { t.text_dim },
         );

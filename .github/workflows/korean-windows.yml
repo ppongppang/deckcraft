@@ -34,12 +34,25 @@ jobs:
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
         with:
           key: korean-windows-deckcraft
+          cache-on-failure: true
       - name: Format source
         run: cargo fmt --all
       - name: Run project quality gates
         run: cargo xtask ci
       - name: Build Windows application
         run: cargo build --release -p deckcraft
+      - name: Render Korean interface offscreen
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path validation -Force | Out-Null
+          cargo run --release -p deckcraft-ui-egui --example korean_ui_shot -- validation/deckcraft-ko.png
+      - name: Upload Korean interface snapshot
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: deckcraft-korean-interface-check
+          path: validation/
+          if-no-files-found: error
+          retention-days: 30
       - name: Prepare portable files
         shell: pwsh
         run: |
