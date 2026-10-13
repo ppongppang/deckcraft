@@ -140,7 +140,13 @@ pub fn small_button_ex(ui: &mut Ui, icon: Icon, label: &str, enabled: bool, sele
     }
     icons::paint(&painter, Rect::from_center_size(pos2(rect.min.x + 12.0, rect.center().y), vec2(17.0, 17.0)), icon, t.text, !enabled);
     if !label.is_empty() {
-        painter.text(pos2(rect.min.x + 24.0, rect.center().y), Align2::LEFT_CENTER, crate::i18n::t(label), font, if enabled { t.text } else { t.text_faint });
+        painter.text(
+            pos2(rect.min.x + 24.0, rect.center().y),
+            Align2::LEFT_CENTER,
+            crate::i18n::t(label),
+            font,
+            if enabled { t.text } else { t.text_faint },
+        );
     }
     if split {
         chevron(&painter, pos2(rect.max.x - 6.0, rect.center().y), 2.8, t.text_dim);

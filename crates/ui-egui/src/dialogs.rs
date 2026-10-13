@@ -64,7 +64,8 @@ pub fn show(app: &mut SlideApp, ctx: &egui::Context) {
     let Some(mut d) = app.dialog.take() else { return };
     let mut open = true;
     let mut close = false;
-    egui::Window::new(crate::i18n::t(title(&d.id))).id(egui::Id::new(("dialog", &d.id)))
+    egui::Window::new(crate::i18n::t(title(&d.id)))
+        .id(egui::Id::new(("dialog", &d.id)))
         .id(egui::Id::new(("dialog", d.id.clone())))
         .collapsible(false)
         .resizable(false)
@@ -85,7 +86,9 @@ fn buttons(ui: &mut Ui, ok_label: &str) -> (bool, bool) {
     ui.add_space(8.0);
     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
         let t = Tokens::get(ui.ctx());
-        if ui.add(egui::Button::new(egui::RichText::new(crate::i18n::t(ok_label)).color(t.accent_text)).fill(t.accent).min_size(vec2(72.0, 24.0))).clicked()
+        if ui
+            .add(egui::Button::new(egui::RichText::new(crate::i18n::t(ok_label)).color(t.accent_text)).fill(t.accent).min_size(vec2(72.0, 24.0)))
+            .clicked()
             || ui.input(|i| i.key_pressed(egui::Key::Enter))
         {
             ok = true;
@@ -262,7 +265,10 @@ fn body(app: &mut SlideApp, ui: &mut Ui, d: &mut Dialog) -> bool {
                 return true;
             }
             let what = if names.len() == 1 { format!("“{}”", names[0]) } else { format!("{} presentations", names.len()) };
-            ui.label(egui::RichText::new(crate::i18n::fmt("Do you want to save the changes you made to {what}?", &[("{what}", (what).to_string())])).strong());
+            ui.label(
+                egui::RichText::new(crate::i18n::fmt("Do you want to save the changes you made to {what}?", &[("{what}", (what).to_string())]))
+                    .strong(),
+            );
             ui.label(crate::i18n::t("Your changes will be lost if you don't save them."));
             ui.add_space(8.0);
             let mut done = false;
@@ -275,7 +281,9 @@ fn body(app: &mut SlideApp, ui: &mut Ui, d: &mut Dialog) -> bool {
                     done = true;
                 }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    let save = ui.add(egui::Button::new(egui::RichText::new(crate::i18n::t("Save")).color(t.accent_text)).fill(t.accent).min_size(vec2(72.0, 24.0)));
+                    let save = ui.add(
+                        egui::Button::new(egui::RichText::new(crate::i18n::t("Save")).color(t.accent_text)).fill(t.accent).min_size(vec2(72.0, 24.0)),
+                    );
                     if save.clicked() || ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                         if app.save_all() {
                             app.quit_confirmed = true;
@@ -524,7 +532,10 @@ fn body(app: &mut SlideApp, ui: &mut Ui, d: &mut Dialog) -> bool {
             for item in &list {
                 ui.horizontal(|ui| {
                     let w = item.get("word").and_then(Value::as_str).unwrap_or("");
-                    ui.label(crate::i18n::fmt("Slide {0}: “{w}”", &[("{0}", (item.get("slide").and_then(Value::as_u64).unwrap_or(0) + 1).to_string()), ("{w}", (w).to_string())]));
+                    ui.label(crate::i18n::fmt(
+                        "Slide {0}: “{w}”",
+                        &[("{0}", (item.get("slide").and_then(Value::as_u64).unwrap_or(0) + 1).to_string()), ("{w}", (w).to_string())],
+                    ));
                     if ui.small_button(crate::i18n::t("Go to")).clicked() {
                         let _ = app.run("slide.go", json!({"index": item.get("slide").cloned().unwrap_or_default()}));
                     }
@@ -542,7 +553,14 @@ fn body(app: &mut SlideApp, ui: &mut Ui, d: &mut Dialog) -> bool {
             egui::ScrollArea::vertical().max_height(300.0).show(ui, |ui| {
                 for item in &list {
                     ui.horizontal(|ui| {
-                        ui.label(crate::i18n::fmt("Slide {0}: {1}{2}", &[("{0}", (item.get("slide").and_then(Value::as_u64).unwrap_or(0) + 1).to_string()), ("{1}", (item.get("issue").and_then(Value::as_str).unwrap_or("")).to_string()), ("{2}", (item.get("name").and_then(Value::as_str).map(|n| format!(" — {n}")).unwrap_or_default()).to_string())]));
+                        ui.label(crate::i18n::fmt(
+                            "Slide {0}: {1}{2}",
+                            &[
+                                ("{0}", (item.get("slide").and_then(Value::as_u64).unwrap_or(0) + 1).to_string()),
+                                ("{1}", (item.get("issue").and_then(Value::as_str).unwrap_or("")).to_string()),
+                                ("{2}", (item.get("name").and_then(Value::as_str).map(|n| format!(" — {n}")).unwrap_or_default()).to_string()),
+                            ],
+                        ));
                         if ui.small_button(crate::i18n::t("Go to")).clicked() {
                             let _ = app.run("slide.go", json!({"index": item.get("slide").cloned().unwrap_or_default()}));
                             if let Some(id) = item.get("shape") {
@@ -710,15 +728,13 @@ fn body(app: &mut SlideApp, ui: &mut Ui, d: &mut Dialog) -> bool {
             ok
         }
         "preferences" => {
-            egui::ComboBox::from_id_salt("preferences_language")
-                .selected_text(app.ui.language.name())
-                .show_ui(ui, |ui| {
-                    for language in crate::i18n::Language::ALL {
-                        if ui.selectable_label(app.ui.language == language, language.name()).clicked() {
-                            let _ = app.run("app.language", json!({"language": language.code()}));
-                        }
+            egui::ComboBox::from_id_salt("preferences_language").selected_text(app.ui.language.name()).show_ui(ui, |ui| {
+                for language in crate::i18n::Language::ALL {
+                    if ui.selectable_label(app.ui.language == language, language.name()).clicked() {
+                        let _ = app.run("app.language", json!({"language": language.code()}));
                     }
-                });
+                }
+            });
             ui.label(crate::i18n::t("Interface language"));
             ui.label(egui::RichText::new(crate::i18n::t("General")).font(theme::bold(13.0)));
             let mut dark = app.ui.brightness == theme::Brightness::Dark;
@@ -806,7 +822,11 @@ pub fn about(_app: &mut SlideApp, ui: &mut Ui) {
         ui.hyperlink_to("getartcraft.com/apps/deckcraft", deckcraft_engine::links::APP_PAGE);
         ui.hyperlink_to("Source on GitHub", deckcraft_engine::links::GITHUB);
         ui.add_space(6.0);
-        ui.label(egui::RichText::new(crate::i18n::t("MIT OR Apache-2.0 · © 2026 ArtCraft Team and the DeckCraft contributors")).size(11.0).color(t.text_faint));
+        ui.label(
+            egui::RichText::new(crate::i18n::t("MIT OR Apache-2.0 · © 2026 ArtCraft Team and the DeckCraft contributors"))
+                .size(11.0)
+                .color(t.text_faint),
+        );
     });
 }
 
@@ -857,7 +877,11 @@ pub fn start_screen(app: &mut SlideApp, ui: &mut Ui) {
             ui.add_space(8.0);
             ui.horizontal(|ui| {
                 ui.add_space(40.0);
-                if ui.button(crate::i18n::fmt("← Back to {title}", &[("{title}", (title).to_string())])).on_hover_text(crate::i18n::t("Esc")).clicked() {
+                if ui
+                    .button(crate::i18n::fmt("← Back to {title}", &[("{title}", (title).to_string())]))
+                    .on_hover_text(crate::i18n::t("Esc"))
+                    .clicked()
+                {
                     let _ = app.run("app.home", json!({"on": false}));
                 }
             });

@@ -6,14 +6,14 @@
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 #![forbid(unsafe_code)]
 
-pub mod i18n;
-mod ime;
 pub mod canvas;
 pub mod control;
 pub mod credits;
 pub mod dialogs;
 pub mod fillui;
+pub mod i18n;
 pub mod icons;
+mod ime;
 pub mod media;
 pub mod menus;
 pub mod panes;
@@ -1000,5 +1000,4 @@ mod tests {
         assert_eq!(serde_json::to_value(&app.session.active().unwrap().doc).unwrap(), before);
         app.run("app.language", json!({"language": "en"})).unwrap();
     }
-
 }

@@ -476,7 +476,9 @@ fn animation(app: &mut SlideApp, ui: &mut Ui) {
     });
     ui.separator();
     if anims.is_empty() {
-        ui.label(egui::RichText::new(crate::i18n::t("Select an object on the slide and add an animation from the Animations tab.")).color(t.text_dim));
+        ui.label(
+            egui::RichText::new(crate::i18n::t("Select an object on the slide and add an animation from the Animations tab.")).color(t.text_dim),
+        );
         return;
     }
     let mut click = 0;

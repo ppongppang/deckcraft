@@ -612,7 +612,15 @@ pub fn ui(app: &mut SlideApp, ui: &mut Ui) {
         painter.text(
             r.center(),
             Align2::CENTER_CENTER,
-            crate::i18n::fmt("Slide {0:02}:{1:04.1}   Total {2:02}:{3:02}", &[("{0:02}", format!("{:02}", (t / 60.0) as u32)), ("{1:04.1}", format!("{:04.1}", t % 60.0)), ("{2:02}", format!("{:02}", (total / 60.0) as u32)), ("{3:02}", format!("{:02}", (total % 60.0) as u32))]),
+            crate::i18n::fmt(
+                "Slide {0:02}:{1:04.1}   Total {2:02}:{3:02}",
+                &[
+                    ("{0:02}", format!("{:02}", (t / 60.0) as u32)),
+                    ("{1:04.1}", format!("{:04.1}", t % 60.0)),
+                    ("{2:02}", format!("{:02}", (total / 60.0) as u32)),
+                    ("{3:02}", format!("{:02}", (total % 60.0) as u32)),
+                ],
+            ),
             theme::font(13.0),
             Color32::WHITE,
         );
@@ -765,7 +773,14 @@ fn presenter_window(ctx: &egui::Context, show: &mut Show, doc: &Presentation, no
                         .color(Color32::WHITE),
                     );
                     ui.add_space(20.0);
-                    ui.label(egui::RichText::new(crate::i18n::fmt("Slide {0} of {1}", &[("{0}", (cur + 1).to_string()), ("{1}", (doc.slides.len()).to_string())])).size(16.0).color(Color32::from_gray(200)));
+                    ui.label(
+                        egui::RichText::new(crate::i18n::fmt(
+                            "Slide {0} of {1}",
+                            &[("{0}", (cur + 1).to_string()), ("{1}", (doc.slides.len()).to_string())],
+                        ))
+                        .size(16.0)
+                        .color(Color32::from_gray(200)),
+                    );
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         if ui.button(crate::i18n::t("End Show")).clicked() {
                             *keep = false;
@@ -798,7 +813,13 @@ fn presenter_window(ctx: &egui::Context, show: &mut Show, doc: &Presentation, no
                     }
                     None => {
                         ui.painter().rect_filled(nr, CornerRadius::ZERO, Color32::from_gray(40));
-                        ui.painter().text(nr.center(), Align2::CENTER_CENTER, crate::i18n::t("End of slide show"), theme::font(13.0), Color32::from_gray(170));
+                        ui.painter().text(
+                            nr.center(),
+                            Align2::CENTER_CENTER,
+                            crate::i18n::t("End of slide show"),
+                            theme::font(13.0),
+                            Color32::from_gray(170),
+                        );
                     }
                 }
                 let notes_rect = Rect::from_min_max(pos2(right.min.x, nr.max.y + 16.0), right.max);

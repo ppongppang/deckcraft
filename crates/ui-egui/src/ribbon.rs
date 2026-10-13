@@ -62,8 +62,11 @@ pub fn title_bar(app: &mut SlideApp, ui: &mut Ui) {
         if icon_toggle(&mut child, Icon::PlayFromStart, "Play from Start (F5)", has_doc, false).clicked() {
             app.start_show(0, false);
         }
-        let title =
-            app.session.active().map(|d| format!("{}{}", d.title(), if dirty { " — Edited" } else { "" })).unwrap_or_else(|| "DeckCraft".into());
+        let title = app
+            .session
+            .active()
+            .map(|d| if dirty { format!("{} — {}", d.title(), crate::i18n::t("Edited")) } else { d.title() })
+            .unwrap_or_else(|| "DeckCraft".into());
         ui.painter().text(rect.center(), Align2::CENTER_CENTER, title, theme::font(13.0), t.text);
         // Right side.
         let mut right = ui.new_child(
@@ -288,7 +291,8 @@ fn clipboard_group(app: &mut SlideApp, ui: &mut Ui) {
             small(app, ui, Icon::Copy, "Copy", "edit.copy", json!({}));
             let on = app.session.painter.is_some();
             let en = enabled(app, "format.painter");
-            let r = small_button(ui, Icon::FormatPainter, "Format", en, on).on_hover_text(crate::i18n::t("Format Painter (double-click to keep it on)"));
+            let r =
+                small_button(ui, Icon::FormatPainter, "Format", en, on).on_hover_text(crate::i18n::t("Format Painter (double-click to keep it on)"));
             if r.double_clicked() {
                 run(app, "format.painter", json!({"sticky": true}));
             } else if r.clicked() {
@@ -584,7 +588,13 @@ fn paragraph_group(app: &mut SlideApp, ui: &mut Ui, st: &Value) {
                 let r = icon_toggle(ui, Icon::Columns, "Columns", en, false);
                 egui::Popup::menu(&r).show(|ui| {
                     for n in 1..=3 {
-                        if ui.button(crate::i18n::fmt("{n} Column{0}", &[("{n}", (n).to_string()), ("{0}", (if n > 1 { "s" } else { "" }).to_string())])).clicked() {
+                        if ui
+                            .button(crate::i18n::fmt(
+                                "{n} Column{0}",
+                                &[("{n}", (n).to_string()), ("{0}", (if n > 1 { "s" } else { "" }).to_string())],
+                            ))
+                            .clicked()
+                        {
                             run(app, "format.columns", json!({"count": n, "spacing": 18}));
                         }
                     }
@@ -1083,7 +1093,11 @@ pub fn table_grid_picker(ui: &mut Ui) -> Option<(usize, usize)> {
     let id = ui.id().with("tgrid");
     let mut hover: (usize, usize) = ui.data_mut(|d| d.get_temp(id).unwrap_or((0, 0)));
     let cell = 16.0;
-    let label = if hover.0 > 0 { crate::i18n::fmt("{cols}×{rows} Table", &[("{cols}", hover.1.to_string()), ("{rows}", hover.0.to_string())]) } else { "Insert Table".into() };
+    let label = if hover.0 > 0 {
+        crate::i18n::fmt("{cols}×{rows} Table", &[("{cols}", hover.1.to_string()), ("{rows}", hover.0.to_string())])
+    } else {
+        "Insert Table".into()
+    };
     ui.label(&label);
     let (rect, resp) = ui.allocate_exact_size(vec2(10.0 * (cell + 2.0), 8.0 * (cell + 2.0)), Sense::click());
     if let Some(p) = resp.hover_pos() {
@@ -1685,7 +1699,13 @@ pub fn paint_anim_tile(p: &egui::Painter, r: Rect, label: &str, class: AnimClass
         _ => Icon::AnimPath,
     };
     icons::paint(p, Rect::from_center_size(pos2(r.center().x, r.min.y + 18.0), vec2(28.0, 28.0)), icon, t.text, !enabled);
-    p.text(pos2(r.center().x, r.max.y - 8.0), Align2::CENTER_CENTER, crate::i18n::t(label), theme::font(10.0), if enabled { t.text } else { t.text_faint });
+    p.text(
+        pos2(r.center().x, r.max.y - 8.0),
+        Align2::CENTER_CENTER,
+        crate::i18n::t(label),
+        theme::font(10.0),
+        if enabled { t.text } else { t.text_faint },
+    );
 }
 
 // ---------- Slide Show / Record / Review / View ----------
@@ -1857,18 +1877,15 @@ fn view(app: &mut SlideApp, ui: &mut Ui) {
         }
     });
     group(ui, |ui| {
-        egui::ComboBox::from_id_salt("interface_language")
-            .selected_text(app.ui.language.name())
-            .show_ui(ui, |ui| {
-                for language in crate::i18n::Language::ALL {
-                    if ui.selectable_label(app.ui.language == language, language.name()).clicked() {
-                        let _ = app.run("app.language", json!({"language": language.code()}));
-                    }
+        egui::ComboBox::from_id_salt("interface_language").selected_text(app.ui.language.name()).show_ui(ui, |ui| {
+            for language in crate::i18n::Language::ALL {
+                if ui.selectable_label(app.ui.language == language, language.name()).clicked() {
+                    let _ = app.run("app.language", json!({"language": language.code()}));
                 }
-            });
+            }
+        });
         ui.label(crate::i18n::t("Interface language"));
     });
-
 }
 
 // ---------- contextual tabs ----------

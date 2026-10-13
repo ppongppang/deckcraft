@@ -627,7 +627,6 @@ fn context_menu(app: &mut SlideApp, resp: &egui::Response) {
     });
 }
 
-
 fn ime_cursor(app: &SlideApp, ui: &Ui, painter: &egui::Painter, top: Pos2, bottom: Pos2, tokens: &Tokens) {
     if ui.ctx().memory(|memory| memory.focused().is_some()) {
         return;

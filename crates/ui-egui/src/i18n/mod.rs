@@ -58,11 +58,7 @@ impl Language {
             let system = sys_locale::get_locale();
             #[cfg(target_arch = "wasm32")]
             let system = None;
-            std::env::var("DECKCRAFT_LANGUAGE")
-                .ok()
-                .or(system)
-                .map(|tag| Self::from_tag(&tag))
-                .unwrap_or(Self::En)
+            std::env::var("DECKCRAFT_LANGUAGE").ok().or(system).map(|tag| Self::from_tag(&tag)).unwrap_or(Self::En)
         }
     }
 }
@@ -104,11 +100,7 @@ fn korean() -> &'static catalog::Catalog {
 
 /// Borrowed source strings remain borrowed; catalog strings live for the process lifetime.
 pub fn tr(language: Language, source: &str) -> &str {
-    if language.resolved() == Language::Ko {
-        korean().in_context("", source).unwrap_or(source)
-    } else {
-        source
-    }
+    if language.resolved() == Language::Ko { korean().in_context("", source).unwrap_or(source) } else { source }
 }
 
 pub fn t(source: &str) -> &str {
@@ -117,13 +109,7 @@ pub fn t(source: &str) -> &str {
 
 /// Context distinguishes chart "Line" from a shape's line without changing model values.
 pub fn tc<'a>(context: &str, source: &'a str) -> &'a str {
-    CURRENT.with(|language| {
-        if language.get().resolved() == Language::Ko {
-            korean().in_context(context, source).unwrap_or(source)
-        } else {
-            source
-        }
-    })
+    CURRENT.with(|language| if language.get().resolved() == Language::Ko { korean().in_context(context, source).unwrap_or(source) } else { source })
 }
 
 pub fn owned(source: String) -> String {
